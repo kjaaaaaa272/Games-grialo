@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Tangkap Logo - RIALO</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: url('background rialo.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      color: #fff;
+    }
+    .game-container {
+      position: relative;
+      width: 360px;
+      height: 600px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      justify-content: space-between;
+      width: calc(100% - 20px);
+      font-size: 16px;
+      z-index: 10;
+    }
+    button {
+      background: #facc15;
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
+    }
+    .player {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 60px;
+      background: url('basket.png') no-repeat center/contain;
+      pointer-events: none;
+    }
+    .object {
+      position: absolute;
+      top: -60px;
+      width: 50px;
+      height: 50px;
+      background: url('grialo.jpg') no-repeat center/contain;
+      background-size: cover;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="hud">
+      <div>Skor: <span id="score">0</span></div>
+      <div>Waktu: <span id="time">30</span>s</div>
+      <button id="startBtn">Mulai</button>
+    </div>
+    <div class="player" id="player"></div>
+  </div>
+
+  <script>
+    const container = document.querySelector('.game-container');
+    const player = document.getElementById('player');
+    const scoreEl = document.getElementById('score');
+    const timeEl = document.getElementById('time');
+    const startBtn = document.getElementById('startBtn');
+
+    let score = 0;
+    let timeLeft = 30;
+    let gameRunning = false;
+    let spawnInterval, timerInterval;
+
+    // Gerak mouse
+    container.addEventListener('mousemove', e => {
+      if (!gameRunning) return;
+      const rect = container.getBoundingClientRect();
+      let x = e.clientX - rect.left - player.offsetWidth / 2;
+      x = Math.max(0, Math.min(x, rect.width - player.offsetWidth));
+      player.style.left = x + 'px';
+    });
+
+    // Gerak sentuh
+    container.addEventListener('touchmove', e => {
+      if (!gameRunning) return;
+      const rect = container.getBoundingClientRect();
+      const touch = e.touches[0];
+      let x = touch.clientX - rect.left - player.offsetWidth / 2;
+      x = Math.max(0, Math.min(x, rect.width - player.offsetWidth));
+      player.style.left = x + 'px';
+    });
+
+    function spawnObject() {
+      const obj = document.createElement('div');
+      obj.className = 'object';
+      obj.style.left = Math.random() * (container.offsetWidth - 50) + 'px';
+      container.appendChild(obj);
+
+      let speed = 3 + Math.random() * 3;
+      const fall = setInterval(() => {
+        let top = parseFloat(obj.style.top || '-60');
+        top += speed;
+        obj.style.top = top + 'px';
+
+        const playerRect = player.getBoundingClientRect();
+        const objRect = obj.getBoundingClientRect();
+        if (objRect.bottom >= playerRect.top &&
+            objRect.left < playerRect.right &&
+            objRect.right > playerRect.left) {
+          score++;
+          scoreEl.textContent = score;
+          obj.remove();
+          clearInterval(fall);
+        }
+
+        if (top > container.offsetHeight) {
+          obj.remove();
+          clearInterval(fall);
+        }
+      }, 20);
+    }
+
+    function startGame() {
+      if (gameRunning) return;
+      gameRunning = true;
+      score = 0;
+      timeLeft = 30;
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      startBtn.disabled = true;
+
+      spawnInterval = setInterval(spawnObject, 700);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timeEl.textContent = timeLeft;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      clearInterval(spawnInterval);
+      clearInterval(timerInterval);
+      startBtn.disabled = false;
+      alert(`⏰ Waktu habis!\nSkor akhir kamu: ${score}`);
+      document.querySelectorAll('.object').forEach(o => o.remove());
+    }
+
+    startBtn.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
